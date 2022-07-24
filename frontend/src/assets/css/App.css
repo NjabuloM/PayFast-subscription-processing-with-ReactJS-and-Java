@@ -1,0 +1,28 @@
+.App {
+  text-align: center;
+}
+
+body {
+    background-color: #F8F6F0;
+    color: #36454F;
+    font-family: Roboto;
+    display: flex;
+    justify-content: center;
+    padding: 30px;
+}
+
+.magazineTile {
+    padding: 5px 0px 5px 0px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    background-color: #D3D3D3;
+}
+
+.subscribeNow {
+    background-color: #FFFF00;
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    border-radius: 12px;
+    font-size: 16px;
+}
