@@ -25,7 +25,6 @@ const OrderConfirmation = () => {
             form.setAttribute("action", gateway_path);
 
             for(var element in receiveFormData) {
-                console.log(element);
                 if(receiveFormData.hasOwnProperty(element)) {
                     var hiddenField = document.createElement("input");
                     hiddenField.setAttribute("type", receiveFormData[element].type);
@@ -37,8 +36,6 @@ const OrderConfirmation = () => {
             }        
 
             form._submit_function_ = form.submit;
-
-            console.log(form);
 
             document.body.appendChild(form);
             form._submit_function_();
