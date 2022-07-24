@@ -1,0 +1,9 @@
+[
+  { "magazineId": 1, "emailAddress": "joe@soap.net", "paymentFrequency": "MONTHLY" },
+
+{
+  "subscriptionId": 1,
+  "firstName": "Joe",
+  "lastName": "Soap"
+}
+]
