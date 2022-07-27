@@ -5,7 +5,7 @@ A minimal demo application of a fictitious store that sells magazine subscriptio
 ## What's it for?
 This demo webapp aims to showcase one way subscription payments can be processed using PayFast, with a ReactJS UI and a Java REST API.
 
-There's a brief write-up about it here: [Hashnode](https://hashnode.com)
+There's a brief write-up about it here: [Hashnode](https://njabulo.hashnode.dev/accept-payfast-subscription-payment-with-reactjs-and-java)
 
 ## How do I run it?
 If you have docker on your environment, you can issue the start-up command below
