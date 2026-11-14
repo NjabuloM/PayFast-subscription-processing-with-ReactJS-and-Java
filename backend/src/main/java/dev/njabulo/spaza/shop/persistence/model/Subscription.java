@@ -1,6 +1,7 @@
 package dev.njabulo.spaza.shop.persistence.model;
 
 import dev.njabulo.spaza.shop.common.FrequencyType;
+import dev.njabulo.spaza.shop.common.SubscriptionStatus;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -55,4 +56,10 @@ public class Subscription {
     @Getter
     @Setter
     private FrequencyType paymentFrequency;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    @Getter
+    @Setter
+    private SubscriptionStatus status;
 }

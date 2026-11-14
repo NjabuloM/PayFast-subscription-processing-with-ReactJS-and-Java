@@ -20,6 +20,7 @@ CREATE TABLE SUBSCRIPTION (
     reference VARCHAR(150),
     pf_token VARCHAR(150),
     payment_frequency VARCHAR(50),
+    status VARCHAR(20) DEFAULT 'PENDING' NOT NULL,
     magazine_id INT,
     FOREIGN KEY (magazine_id) REFERENCES MAGAZINE_STAND(id)
 );

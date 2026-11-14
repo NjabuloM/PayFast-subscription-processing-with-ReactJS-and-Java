@@ -14,7 +14,8 @@ export const checkOut = (subscriptionInfo) => {
         },
         body: JSON.stringify({
             firstName: subscriptionInfo.firstName, lastName: subscriptionInfo.lastName,
-            emailAddress: subscriptionInfo.emailAddress, magazineId: subscriptionInfo.magazineId
+            emailAddress: subscriptionInfo.emailAddress, magazineId: subscriptionInfo.magazineId,
+            paymentFrequency: subscriptionInfo.paymentFrequency
         })
     })
     .then(response => {

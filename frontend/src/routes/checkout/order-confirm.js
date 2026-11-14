@@ -51,12 +51,14 @@ const OrderConfirmation = () => {
         const optionSelected = event.target.id;
         if (optionSelected === 'annualRadio') {
             const annualSubscription = {
+                'frequency': 'ANNUALLY',
                 'name': 'yearly',
                 'value': Math.ceil(magazine.price * 12 - magazine.price * 12 * 0.1)
             };
             setSubscriptionType(annualSubscription);
         } else if (optionSelected === 'monthRadio') {
             const monthlySubscription = {
+                'frequency': 'MONTHLY',
                 'name': 'monthly',
                 'value': magazine.price
             };
@@ -69,7 +71,8 @@ const OrderConfirmation = () => {
             'firstName': firstName,
             'lastName': lastName,
             'emailAddress': email,
-            'paymentFrequency': subscriptionType ,
+            // The API expects the FrequencyType enum name (MONTHLY / ANNUALLY), not the display object
+            'paymentFrequency': subscriptionType?.frequency,
             'magazineId': magazine.id
         }
         dispatch(payForSubscription(subDetails));

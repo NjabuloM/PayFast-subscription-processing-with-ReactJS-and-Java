@@ -10,4 +10,10 @@ import java.lang.annotation.Target;
 public @interface GatewayElement {
     String label();
     int placement();
+
+    /**
+     * When true, the field takes part in the signature calculation but must never be sent to the browser
+     * or posted to PayFast (e.g. the merchant passphrase).
+     */
+    boolean signatureOnly() default false;
 }

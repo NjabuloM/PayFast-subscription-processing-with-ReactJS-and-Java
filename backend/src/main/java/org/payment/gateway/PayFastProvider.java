@@ -14,7 +14,7 @@ public class PayFastProvider {
     private final String cancelUrl;
     @GatewayElement(label = "notify_url", placement = 5)
     private final String notifyUrl;
-    @GatewayElement(label = "passphrase", placement = 20)
+    @GatewayElement(label = "passphrase", placement = 20, signatureOnly = true)
     private final String passPhrase;
 
     // Buyer details

@@ -14,9 +14,10 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.servlet.http.HttpServletRequest;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @CrossOrigin(origins = "*", maxAge = 3600) //http://localhost:3000
 @RestController
@@ -46,7 +47,6 @@ public class SpazaShopController {
     @PostMapping("/newsstand/subscribe")
     public ResponseEntity<SubscriptionDTO> addSubscription(@RequestBody SubscriptionDTO subscriptionDto) {
         Subscription subscription = modelMapper.map(subscriptionDto, Subscription.class);
-        subscription.setReference(UUID.randomUUID().toString());
         Subscription savedSubscription = shopService.addSubscription(subscription);
 
         SubscriptionDTO subscriptionDTO = modelMapper.map(savedSubscription, SubscriptionDTO.class);
@@ -55,33 +55,41 @@ public class SpazaShopController {
 
     @PostMapping("/newsstand/checkout")
     public ResponseEntity<Object> checkout(@RequestBody SubscriptionDTO subscriptionDto) {
-        Subscription subscription = modelMapper.map(subscriptionDto, Subscription.class);
+        if (subscriptionDto.getEmailAddress() == null || subscriptionDto.getEmailAddress().isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("Error", "An email address is required"));
+        }
+
         //Get product detail
-        Magazine magazine = shopService.getMagazineById(subscription.getMagazineId());
+        Magazine magazine = shopService.getMagazineById(subscriptionDto.getMagazineId());
         if (magazine == null) {
             return ResponseEntity.status(HttpStatus.EXPECTATION_FAILED)
                     .body("{\"Error\": \"Request could not be processed. Please contact Admin\"}");
         }
+
+        //Save the subscription (PENDING) first, so that PayFast's notification can be matched back to it
+        Subscription subscription = shopService.addSubscription(modelMapper.map(subscriptionDto, Subscription.class));
 
         List<HtmlFormField> hiddenHTMLFormFields = shopService.generateHiddenHTMLForm(subscription, magazine);
 
         return ResponseEntity.accepted().body(hiddenHTMLFormFields);
     }
 
+    /**
+     * PayFast's ITN (Instant Transaction Notification) endpoint, i.e. the NOTIFY_URL. PayFast calls it after the
+     * first payment, after every recurring payment, and when the subscription is cancelled.
+     */
     @PostMapping(value = "/payment/notification", consumes = MediaType.APPLICATION_FORM_URLENCODED_VALUE)
-    public ResponseEntity<Object> payFastNotifyCallback(@RequestParam Map<String, String> responseObject) {
-        //Using responseObject, do security checks before updating own records
-        //TODO: Verify signature
-        //TODO: Validate notification source, i.e. from valid PayFast domain
-        //TODO: Check the expected amount and the actual amounts match
-        //TODO: Confirm order details with received data by making a server call to PayFast
+    public ResponseEntity<Object> payFastNotifyCallback(HttpServletRequest request) {
+        //The signature is computed over the fields in the order PayFast sent them; the servlet container keeps
+        //request parameters in that order.
+        Map<String, String> receivedFields = new LinkedHashMap<>();
+        request.getParameterMap().forEach((key, values) -> receivedFields.put(key, values.length > 0 ? values[0] : ""));
 
-        logger.debug("Response from call-back: {}", responseObject);
+        boolean applied = shopService.processPaymentNotification(receivedFields, request.getRemoteAddr());
 
-        //...thereafter, update own records accordingly
-
-        //Respond with a 200 to prevent a retry to send the same notification
-        return ResponseEntity.ok().build();
+        //A 200 tells PayFast the notification was received, so it won't be sent again. Rejected (e.g. forged)
+        //notifications get a 400.
+        return applied ? ResponseEntity.ok().build() : ResponseEntity.badRequest().build();
     }
 
 }

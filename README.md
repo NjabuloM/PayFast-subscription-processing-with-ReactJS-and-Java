@@ -16,8 +16,15 @@ docker-compose up -d
 ***Note:***
 When running on localhost, you may want to make use of tools such as localtunnel, ngrok, or something similar to create a tunnel to your localhost.
 
-Also, whether on localhost or on a hosted environment, remember that the backend reads the fields below from System properties. You can either set them or change the code to read them from somewhere else (see ShopService.java, line 49-56).
+Also, whether on localhost or on a hosted environment, remember that the backend reads the settings below from environment variables (see `application.properties` and `PayFastProperties.java`). `docker-compose` passes them through from your shell or from a `.env` file next to `docker-compose.yaml`.
 > MERCHANT_ID, MERCHANT_KEY, PASS_PHRASE, RETURN_URL, CANCEL_URL and, NOTIFY_URL
+
+`NOTIFY_URL` must point at `<your public backend URL>/shop/payment/notification`. Every notification (ITN) PayFast sends there is checked before it is trusted: the signature, the merchant id, that it came from a PayFast server, that the amount matches, and finally PayFast is asked to confirm it. Only then is the subscription marked `ACTIVE`, `CANCELLED` or `FAILED` and the PayFast token saved.
+
+Optional settings:
+> PAYFAST_SANDBOX (default `true`), PAYFAST_VERIFY_SOURCE_IP (default `true`), PAYFAST_VERIFY_WITH_SERVER (default `true`)
+
+The source-IP check works through ngrok, localtunnel and Docker because the backend trusts `X-Forwarded-For` from private/loopback proxies. If your tunnel doesn't send that header, set `PAYFAST_VERIFY_SOURCE_IP=false` while testing locally.
 
 To stop it, issue the stop command below
 

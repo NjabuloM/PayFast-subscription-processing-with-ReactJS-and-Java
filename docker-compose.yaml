@@ -4,6 +4,15 @@ services:
     restart: always
     ports:
       - 8080:8080
+    # Taken from your shell or a .env file next to this compose file
+    environment:
+      - MERCHANT_ID
+      - MERCHANT_KEY
+      - PASS_PHRASE
+      - RETURN_URL
+      - CANCEL_URL
+      - NOTIFY_URL
+      - PAYFAST_SANDBOX=${PAYFAST_SANDBOX:-true}
   frontend:
     build:
       context: frontend
