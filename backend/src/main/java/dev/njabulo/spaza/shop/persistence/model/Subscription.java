@@ -1,10 +1,12 @@
 package dev.njabulo.spaza.shop.persistence.model;
 
 import dev.njabulo.spaza.shop.common.FrequencyType;
+import dev.njabulo.spaza.shop.common.SubscriptionStatus;
 import lombok.Getter;
 import lombok.Setter;
 
 import javax.persistence.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity(name = "SUBSCRIPTION")
@@ -55,4 +57,16 @@ public class Subscription {
     @Getter
     @Setter
     private FrequencyType paymentFrequency;
+
+    /** The amount PayFast charges per billing cycle, fixed at checkout */
+    @Column(name = "amount")
+    @Getter
+    @Setter
+    private BigDecimal amount;
+
+    @Column(name = "status")
+    @Enumerated(EnumType.STRING)
+    @Getter
+    @Setter
+    private SubscriptionStatus status;
 }

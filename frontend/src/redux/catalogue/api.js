@@ -1,58 +1,48 @@
-export const getMagazineCatalogue = () => {
-    var host = getHostURL();
+const handleJsonResponse = response => {
+    let jsonResponse = response.json();
+    if (response.status === 200) {
+        return jsonResponse;
+    } else {
+        return jsonResponse.then(Promise.reject.bind(Promise));
+    }
+};
 
-    const CATALOGUE_ENDPOINT = host + '/shop/newsstand';
+export const getMagazineCatalogue = () => {
+    const CATALOGUE_ENDPOINT = getHostURL() + '/shop/newsstand';
     return fetch(CATALOGUE_ENDPOINT, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
         }
     })
-    .then(response => {
-        let jsonResponse = response.json();
-        if (response.status === 200) {
-            return jsonResponse;
-        } else {
-            return jsonResponse.then(Promise.reject.bind(Promise));
-        }
-    })
-    .then(newsstand => {
-        return newsstand;
-    });
+    .then(handleJsonResponse);
 }
 
 export const getMagazine = (magazineId) => {
-    var host = getHostURL();
-
-    const MAGAZINE_ENDPOINT = host + '/shop/newsstand/magazine/' + magazineId;
+    const MAGAZINE_ENDPOINT = getHostURL() + '/shop/newsstand/magazine/' + magazineId;
     return fetch(MAGAZINE_ENDPOINT, {
         method: 'GET',
         headers: {
             'Content-Type': 'application/json'
         }
     })
-    .then(response => {
-        let jsonResponse = response.json();
-        if (response.status === 200) {
-            return jsonResponse;
-        } else {
-            return jsonResponse.then(Promise.reject.bind(Promise));
-        }
-    })
-    .then(magazine => {
-        return magazine;
-    });
+    .then(handleJsonResponse);
 }
 
-function getHostURL() {
+// The billing options for a magazine, e.g. [{ frequency: 'MONTHLY', amount: 44.90, cycles: 12 }, ...].
+// Prices are worked out by the backend, never in the browser.
+export const getPlans = (magazineId) => {
+    const PLANS_ENDPOINT = getHostURL() + '/shop/newsstand/magazine/' + magazineId + '/plans';
+    return fetch(PLANS_ENDPOINT, {
+        method: 'GET',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    })
+    .then(handleJsonResponse);
+}
+
+export function getHostURL() {
     const env_api_host = process.env.REACT_APP_SPAZA_SHOP_API_URI;
-
-	var host = '';
-	if ( (null !== env_api_host) && (env_api_host !== undefined))  {
-		host = env_api_host;
-	} else {
-		host = 'http://localhost:8181';
-	}
-
-    return host;
+    return env_api_host ? env_api_host : 'http://localhost:8080';
 }

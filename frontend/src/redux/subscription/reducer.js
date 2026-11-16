@@ -1,18 +1,20 @@
 import { createSlice } from "@reduxjs/toolkit";
-const initialState = { formData: {}, selectedMagazineId: 0, loading: false, magazine: {} }
+const initialState = { formData: {}, selectedMagazineId: 0, loading: false, magazine: {}, plans: [] }
 
 const subscribeSlice = createSlice({
     name: 'subscribe',
     initialState,
     reducers: {
         selectSubscription: (state, action) => {
-            state.selectedMagazineId = action.payload;
+            state.selectedMagazineId = action.payload.selectedMagazineId;
         },
         viewMagazineDetails: (state, action) => {
             state.loading = true;
         },
         receiveMagazineDetails: (state, action) => {
-            state.magazine = action.payload;
+            state.magazine = action.payload.magazine;
+            state.plans = action.payload.plans;
+            state.loading = false;
         },
         payForSubscription: (state, action) => {
         },

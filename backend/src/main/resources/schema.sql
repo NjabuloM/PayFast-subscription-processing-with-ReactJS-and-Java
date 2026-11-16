@@ -20,6 +20,21 @@ CREATE TABLE SUBSCRIPTION (
     reference VARCHAR(150),
     pf_token VARCHAR(150),
     payment_frequency VARCHAR(50),
+    amount DECIMAL(10, 2),
+    status VARCHAR(20) DEFAULT 'PENDING' NOT NULL,
     magazine_id INT,
     FOREIGN KEY (magazine_id) REFERENCES MAGAZINE_STAND(id)
+);
+
+-- One row per genuine PayFast notification: the payment history of a subscription, and the way duplicates
+-- (PayFast resending the same notification) are recognised.
+CREATE TABLE PAYMENT_NOTIFICATION (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    subscription_id INT NOT NULL,
+    pf_payment_id VARCHAR(50),
+    payment_status VARCHAR(20) NOT NULL,
+    amount_gross DECIMAL(10, 2),
+    received_at TIMESTAMP NOT NULL,
+    FOREIGN KEY (subscription_id) REFERENCES SUBSCRIPTION(id),
+    CONSTRAINT uq_payment_notification UNIQUE (pf_payment_id, payment_status)
 );
