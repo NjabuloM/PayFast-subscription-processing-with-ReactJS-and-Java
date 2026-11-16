@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -28,12 +29,12 @@ class PayFastProviderTest {
                 .cancelUrl("http://localhost.heroku.com/cancel")
                 .notifyUrl("http://localhost.heroku.com/notify")
                 .paymentId("MAG-SUB-102")
-                .amount(34)
+                .amount(new BigDecimal("34"))
                 .itemName("Popular Mechanics")
                 .itemDescription("Annual Subscription of Popular Mechanics")
                 .customStr1("MAG-SUB-102")
                 .subscriptionType(1)
-                .recurringAmount(34)
+                .recurringAmount(new BigDecimal("34"))
                 .frequency(3)
                 .cycles(12)
                 .build();
@@ -81,6 +82,55 @@ class PayFastProviderTest {
         Assertions.assertEquals(expected, PayFastProviderUtility.generateItnSignature(itn, TEST_PASSPHRASE));
         Assertions.assertEquals("m_payment_id=abc&item_name=Garden+and+Home&custom_str2=&amount_gross=43.50",
                 PayFastProviderUtility.buildItnParameterString(itn));
+    }
+
+    @Test
+    void amountsAreSentWithTwoDecimalsAndUnsetCustomIntIsLeftOut() {
+        Map<Integer, ElementKeyValuePair> formElements = PayFastProviderUtility.sortFormElementsByPlacement(payFastProvider);
+
+        Assertions.assertEquals("34.00", valueOf(formElements, "amount"));
+        Assertions.assertEquals("34.00", valueOf(formElements, "recurring_amount"));
+        Assertions.assertNull(valueOf(formElements, "custom_int1"));
+    }
+
+    @Test
+    void emailAndCellNumberAreBothKeptInPayFastOrder() {
+        PayFastProvider withCell = new PayFastProvider.PayFastProviderBuilder(TEST_MERCHANT_ID, TEST_MERCHANT_KEY, null)
+                .emailAddress("joe@soap.net")
+                .cellNumber("0821234567")
+                .paymentId("ref")
+                .build();
+
+        java.util.List<String> keys = PayFastProviderUtility.sortFormElementsByPlacement(withCell).values().stream()
+                .map(ElementKeyValuePair::key).toList();
+
+        Assertions.assertTrue(keys.indexOf("email_address") >= 0);
+        Assertions.assertEquals(keys.indexOf("email_address") + 1, keys.indexOf("cell_number"));
+        Assertions.assertEquals(keys.indexOf("cell_number") + 1, keys.indexOf("m_payment_id"));
+    }
+
+    @Test
+    void valuesAreEncodedLikePhpUrlencode() {
+        Assertions.assertEquals("Garden+%26+Home%2A+%7E+-_.", PayFastProviderUtility.encode("Garden & Home* ~ -_."));
+        Assertions.assertEquals("http%3A%2F%2Flocalhost%3A8080%2Fnotify", PayFastProviderUtility.encode("http://localhost:8080/notify"));
+    }
+
+    @Test
+    void itnBodyIsParsedInReceivedOrderKeepingEmptyFieldsAndDecodingValues() {
+        Map<String, String> fields = PayFastProviderUtility.parseItnBody(
+                "m_payment_id=abc&item_name=Garden+%26+Home&custom_str2=&amount_gross=43.50&flag&m_payment_id=second");
+
+        Assertions.assertEquals(java.util.List.of("m_payment_id", "item_name", "custom_str2", "amount_gross", "flag"),
+                java.util.List.copyOf(fields.keySet()));
+        Assertions.assertEquals("abc", fields.get("m_payment_id")); //first value wins
+        Assertions.assertEquals("Garden & Home", fields.get("item_name"));
+        Assertions.assertEquals("", fields.get("custom_str2"));
+        Assertions.assertEquals("", fields.get("flag"));
+    }
+
+    private static String valueOf(Map<Integer, ElementKeyValuePair> elements, String key) {
+        return elements.values().stream().filter(e -> e.key().equals(key))
+                .map(e -> String.valueOf(e.value())).findFirst().orElse(null);
     }
 
     static String md5(String input) throws NoSuchAlgorithmException {

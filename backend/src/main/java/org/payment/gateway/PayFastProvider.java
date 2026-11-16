@@ -1,5 +1,7 @@
 package org.payment.gateway;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 
 public class PayFastProvider {
@@ -14,7 +16,7 @@ public class PayFastProvider {
     private final String cancelUrl;
     @GatewayElement(label = "notify_url", placement = 5)
     private final String notifyUrl;
-    @GatewayElement(label = "passphrase", placement = 20, signatureOnly = true)
+    @GatewayElement(label = "passphrase", placement = 21, signatureOnly = true)
     private final String passPhrase;
 
     // Buyer details
@@ -24,37 +26,37 @@ public class PayFastProvider {
     private final String lastName;
     @GatewayElement(label = "email_address", placement = 8)
     private final String emailAddress;
-    @GatewayElement(label = "cell_number", placement = 8)
+    @GatewayElement(label = "cell_number", placement = 9)
     private final String cellNumber; //Will be used if email is not provided
 
     // Transaction detail
-    @GatewayElement(label = "m_payment_id", placement = 9)
+    @GatewayElement(label = "m_payment_id", placement = 10)
     private final String paymentId;
-    @GatewayElement(label = "amount", placement = 10)
-    private final double amount;
-    @GatewayElement(label = "item_name", placement = 11)
+    @GatewayElement(label = "amount", placement = 11)
+    private final BigDecimal amount;
+    @GatewayElement(label = "item_name", placement = 12)
     private final String itemName;
-    @GatewayElement(label = "item_description", placement = 12)
+    @GatewayElement(label = "item_description", placement = 13)
     private final String itemDescription;
 
     //Custom integers - OPTIONAL (1 to 5)
-    @GatewayElement(label = "custom_int1", placement = 13)
-    private final int customInt1;
+    @GatewayElement(label = "custom_int1", placement = 14)
+    private final Integer customInt1;
 
     //Custom strings - OPTIONAL (1 to 5)
-    @GatewayElement(label = "custom_str1", placement = 14)
+    @GatewayElement(label = "custom_str1", placement = 15)
     private final String customStr1;
 
     //Recurring billing / Subscription
-    @GatewayElement(label = "subscription_type", placement = 15)
+    @GatewayElement(label = "subscription_type", placement = 16)
     private final int subscriptionType;
-    @GatewayElement(label = "billing_date", placement = 16)
+    @GatewayElement(label = "billing_date", placement = 17)
     private final LocalDateTime billingDate;
-    @GatewayElement(label = "recurring_amount", placement = 17)
-    private final double recurringAmount;
-    @GatewayElement(label = "frequency", placement = 18)
+    @GatewayElement(label = "recurring_amount", placement = 18)
+    private final BigDecimal recurringAmount;
+    @GatewayElement(label = "frequency", placement = 19)
     private final int frequency;
-    @GatewayElement(label = "cycles", placement = 19)
+    @GatewayElement(label = "cycles", placement = 20)
     private final int cycles;
 
     private PayFastProvider(PayFastProviderBuilder providerBuilder) {
@@ -93,14 +95,14 @@ public class PayFastProvider {
         private String emailAddress;
         private String cellNumber;
         private String paymentId;
-        private double amount;
+        private BigDecimal amount;
         private String itemName;
         private String itemDescription;
-        private int customInt1;
+        private Integer customInt1;
         private String customStr1;
         private int subscriptionType;
         private LocalDateTime billingDate;
-        private double recurringAmount;
+        private BigDecimal recurringAmount;
         private int frequency;
         private int cycles;
 
@@ -150,8 +152,8 @@ public class PayFastProvider {
             return this;
         }
 
-        public PayFastProviderBuilder amount(double amount) {
-            this.amount = amount;
+        public PayFastProviderBuilder amount(BigDecimal amount) {
+            this.amount = toRand(amount);
             return this;
         }
 
@@ -165,7 +167,7 @@ public class PayFastProvider {
             return this;
         }
 
-        public PayFastProviderBuilder customInt1(int customInt1) {
+        public PayFastProviderBuilder customInt1(Integer customInt1) {
             this.customInt1 = customInt1;
             return this;
         }
@@ -185,8 +187,8 @@ public class PayFastProvider {
             return this;
         }
 
-        public PayFastProviderBuilder recurringAmount(double recurringAmount) {
-            this.recurringAmount = recurringAmount;
+        public PayFastProviderBuilder recurringAmount(BigDecimal recurringAmount) {
+            this.recurringAmount = toRand(recurringAmount);
             return this;
         }
 
@@ -202,6 +204,11 @@ public class PayFastProvider {
 
         public PayFastProvider build() {
             return new PayFastProvider(this);
+        }
+
+        /** PayFast expects amounts in rand with two decimals, e.g. 44.90 */
+        private static BigDecimal toRand(BigDecimal amount) {
+            return amount == null ? null : amount.setScale(2, RoundingMode.HALF_UP);
         }
     }
 }

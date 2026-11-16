@@ -1,81 +1,51 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { viewMagazineDetails, payForSubscription } from "../../redux/subscription/reducer";
 import { Row, Col, Card, CardTitle, CardText, Form, FormGroup, Input, Label, Button } from "reactstrap";
 
-const gateway_path = "https://sandbox.payfast.co.za/eng/process";
+const PLAN_LABELS = {
+    MONTHLY: 'Monthly',
+    ANNUALLY: 'Annually'
+};
 
 const OrderConfirmation = () => {
-    const dispatch = useDispatch(); 
-    const magazine = useSelector(state => {
-        return state.subscribe.magazine;
-    });
+    const dispatch = useDispatch();
+    const magazine = useSelector(state => state.subscribe.magazine);
+    const plans = useSelector(state => state.subscribe.plans);
+    const checkoutForm = useSelector(state => state.subscribe.formData);
+    const payFastForm = useRef(null);
 
     useEffect(() => {
         dispatch(viewMagazineDetails());
         // eslint-disable-next-line
     }, []);
 
-    const receiveFormData = useSelector(state => state.subscribe.formData);
-    useEffect(() => {
-        if (Array.isArray(receiveFormData)) {
-            //Build hidden form for submition
-            var form = document.createElement("form");
-            form.setAttribute("method", "POST");
-            form.setAttribute("action", gateway_path);
-
-            for(var element in receiveFormData) {
-                if(receiveFormData.hasOwnProperty(element)) {
-                    var hiddenField = document.createElement("input");
-                    hiddenField.setAttribute("type", receiveFormData[element].type);
-                    hiddenField.setAttribute("name", receiveFormData[element].name);
-                    hiddenField.setAttribute("value", receiveFormData[element].value);
-
-                    form.appendChild(hiddenField);				
-                }
-            }        
-
-            form._submit_function_ = form.submit;
-
-            document.body.appendChild(form);
-            form._submit_function_();
-        } 
-    }, [receiveFormData]);
-
-    const [subscriptionType, setSubscriptionType] = useState();
+    // Once the backend has returned the signed form, post it to PayFast. The backend decides where
+    // (sandbox or live), so the browser never needs to know.
+    const [paymentFrequency, setPaymentFrequency] = useState('');
     const [firstName, setFirstName] = useState('');
     const [lastName, setLastName] = useState('');
     const [email, setEmail] = useState('');
+    const [submitting, setSubmitting] = useState(false);
 
-    function handleSubscriptionTypeSelection(event) {
-        const optionSelected = event.target.id;
-        if (optionSelected === 'annualRadio') {
-            const annualSubscription = {
-                'frequency': 'ANNUALLY',
-                'name': 'yearly',
-                'value': Math.ceil(magazine.price * 12 - magazine.price * 12 * 0.1)
-            };
-            setSubscriptionType(annualSubscription);
-        } else if (optionSelected === 'monthRadio') {
-            const monthlySubscription = {
-                'frequency': 'MONTHLY',
-                'name': 'monthly',
-                'value': magazine.price
-            };
-            setSubscriptionType(monthlySubscription);
+    useEffect(() => {
+        if (checkoutForm.action && Array.isArray(checkoutForm.fields) && payFastForm.current) {
+            payFastForm.current.submit();
+        } else if (checkoutForm.error) {
+            setSubmitting(false);
         }
-    }
+    }, [checkoutForm]);
 
     const handleCheckOut = () => {
-        const subDetails = {
+        setSubmitting(true);
+        dispatch(payForSubscription({
             'firstName': firstName,
             'lastName': lastName,
             'emailAddress': email,
-            // The API expects the FrequencyType enum name (MONTHLY / ANNUALLY), not the display object
-            'paymentFrequency': subscriptionType?.frequency,
+            // Only the choice is sent; the backend works out the price
+            'paymentFrequency': paymentFrequency,
             'magazineId': magazine.id
-        }
-        dispatch(payForSubscription(subDetails));
+        }));
     };
 
     return(
@@ -88,40 +58,29 @@ const OrderConfirmation = () => {
                     <CardText>
                         {magazine.name}
                     </CardText>
-                    
-                    <FormGroup
-                        row
-                        tag="fieldset"
-                        onChange={(event) => handleSubscriptionTypeSelection(event)}
-                        >
+
+                    <FormGroup row tag="fieldset">
                         <legend className="col-form-label col-sm-2">
                             Subscription type
                         </legend>
                         <Col sm={10}>
-                            <FormGroup check>
-                                <Input
-                                    name="radioOption"
-                                    type="radio"
-                                    id="annualRadio"
-                                />
-                                {' '}
-                                <Label check>
-                                    Annually at R {Math.ceil(magazine.price * 12 - magazine.price * 12 * 0.1)}
-                                </Label>
-                            </FormGroup>
-                            <FormGroup check>
-                                <Input
-                                    name="radioOption"
-                                    type="radio"
-                                    id="monthRadio"
-                                />
-                                {' '}
-                                <Label check>
-                                    Monthly at R {magazine.price}
-                                </Label>
-                            </FormGroup>   
+                            {plans.map(plan => (
+                                <FormGroup check key={plan.frequency}>
+                                    <Input
+                                        name="radioOption"
+                                        type="radio"
+                                        id={plan.frequency}
+                                        checked={paymentFrequency === plan.frequency}
+                                        onChange={() => setPaymentFrequency(plan.frequency)}
+                                    />
+                                    {' '}
+                                    <Label check for={plan.frequency}>
+                                        {PLAN_LABELS[plan.frequency] || plan.frequency} at R {Number(plan.amount).toFixed(2)}
+                                    </Label>
+                                </FormGroup>
+                            ))}
                         </Col>
-                    </FormGroup>                        
+                    </FormGroup>
                 </Card>
             </Col>
             <Col sm="6">
@@ -171,12 +130,24 @@ const OrderConfirmation = () => {
                             </FormGroup>
                         </Row>
                     </Form>
-                    <Button onClick={handleCheckOut}>
+                    <Button onClick={handleCheckOut} disabled={!paymentFrequency || !email || submitting}>
                         Check Out
                     </Button>
+                    {checkoutForm.error && !submitting && (
+                        <CardText className="text-danger">{checkoutForm.error}</CardText>
+                    )}
                 </Card>
             </Col>
-        </Row>        
+
+            {/* The signed form returned by the backend; submitted automatically once it arrives */}
+            {checkoutForm.action && Array.isArray(checkoutForm.fields) && (
+                <form ref={payFastForm} method="POST" action={checkoutForm.action} hidden>
+                    {checkoutForm.fields.map(field => (
+                        <input key={field.name} type={field.type} name={field.name} value={field.value} readOnly />
+                    ))}
+                </form>
+            )}
+        </Row>
     );
 }
 

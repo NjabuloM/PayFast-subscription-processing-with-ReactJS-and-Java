@@ -13,6 +13,9 @@ services:
       - CANCEL_URL
       - NOTIFY_URL
       - PAYFAST_SANDBOX=${PAYFAST_SANDBOX:-true}
+      - PAYFAST_VERIFY_SOURCE_IP=${PAYFAST_VERIFY_SOURCE_IP:-true}
+      - PAYFAST_VERIFY_WITH_SERVER=${PAYFAST_VERIFY_WITH_SERVER:-true}
+      - H2_CONSOLE_ENABLED=${H2_CONSOLE_ENABLED:-false}
   frontend:
     build:
       context: frontend

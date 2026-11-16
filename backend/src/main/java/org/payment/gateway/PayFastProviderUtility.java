@@ -5,11 +5,13 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Field;
 import java.math.BigInteger;
+import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.StringJoiner;
 import java.util.TreeMap;
@@ -143,6 +145,31 @@ public class PayFastProviderUtility {
     }
 
     /**
+     * Parses a raw application/x-www-form-urlencoded ITN body, keeping the fields in the exact order PayFast sent
+     * them (the Servlet API makes no such promise for request parameters) and keeping empty fields.
+     * If a field appears more than once, the first value wins.
+     *
+     * @param body the raw request body, e.g. {@code m_payment_id=abc&item_name=Garden+and+Home&custom_str2=}
+     * @return the decoded fields, in received order
+     */
+    public static Map<String, String> parseItnBody(String body) {
+        Map<String, String> fields = new LinkedHashMap<>();
+        if (body == null || body.isBlank()) {
+            return fields;
+        }
+        for (String pair : body.trim().split("&")) {
+            if (pair.isEmpty()) {
+                continue;
+            }
+            int separator = pair.indexOf('=');
+            String key = URLDecoder.decode(separator < 0 ? pair : pair.substring(0, separator), StandardCharsets.UTF_8);
+            String value = separator < 0 ? "" : URLDecoder.decode(pair.substring(separator + 1), StandardCharsets.UTF_8);
+            fields.putIfAbsent(key, value);
+        }
+        return fields;
+    }
+
+    /**
      * Computes the signature PayFast should have sent with an ITN.
      *
      * @param receivedFields the ITN fields, in the order PayFast sent them
@@ -177,8 +204,13 @@ public class PayFastProviderUtility {
         return joiner.toString();
     }
 
-    private static String encode(String value) {
-        return URLEncoder.encode(value.trim(), StandardCharsets.UTF_8);
+    /**
+     * URL-encodes a value the way PayFast's signature rules expect (PHP's urlencode): spaces become '+', hex digits
+     * are upper case, and only letters, digits and "-_." are left as they are. Java's URLEncoder matches this except
+     * that it leaves '*' unencoded, so that one is fixed up here.
+     */
+    static String encode(String value) {
+        return URLEncoder.encode(value.trim(), StandardCharsets.UTF_8).replace("*", "%2A");
     }
 
     /**

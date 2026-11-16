@@ -38,6 +38,11 @@ public record PayFastProperties(String merchantId,
         return sandbox ? "sandbox.payfast.co.za" : "www.payfast.co.za";
     }
 
+    /** Where the browser posts the checkout form. Uses the same sandbox/live switch as ITN validation. */
+    public String processUrl() {
+        return "https://" + host() + "/eng/process";
+    }
+
     private static String blankToNull(String value) {
         return (value == null || value.isBlank()) ? null : value.trim();
     }
